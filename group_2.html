@@ -1,0 +1,510 @@
+<!DOCTYPE html>
+<html lang="kk">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Булану және конденсация: температура–уақыт графигі</title>
+<style>
+  :root{color-scheme:light}
+  *{box-sizing:border-box}
+  body{margin:0;padding:14px;background:#FFF8EC;color:#2B2B2B;font:700 18px/1.45 "Trebuchet MS",Arial,sans-serif}
+  .wrap{max-width:980px;margin:0 auto}
+  h1{font-size:28px;font-weight:900;color:#C2410C;margin:4px 0 6px}
+  h2{font-size:22px;font-weight:900;color:#B45309;margin:0 0 10px}
+  .lead{margin:0 0 14px}
+  .card{background:#fff;border:3px solid #FDBA74;border-radius:18px;padding:14px;margin-bottom:16px;box-shadow:0 4px 0 #FED7AA}
+  .row{display:flex;flex-wrap:wrap;gap:10px;align-items:center;margin:10px 0}
+  button{font-family:inherit;font-size:18px;font-weight:900;border:0;border-radius:14px;padding:12px 18px;color:#fff;background:#F97316;box-shadow:0 4px 0 #C2410C;cursor:pointer}
+  button:active{transform:translateY(2px)}
+  button.green{background:#10B981;box-shadow:0 4px 0 #047857}
+  button.grey{background:#9CA3AF;box-shadow:0 4px 0 #6B7280}
+  button.red{background:#EF4444;box-shadow:0 4px 0 #B91C1C}
+  button.pick{background:#FFF;color:#2B2B2B;border:3px solid #FDBA74;box-shadow:none}
+  button.pick.active{background:#FED7AA;border-color:#EA580C}
+  button.opt{display:block;width:100%;text-align:left;margin:6px 0;background:#fff;color:#2B2B2B;border:3px solid #FDBA74;box-shadow:none}
+  button.opt.ok{background:#BBF7D0;border-color:#10B981}
+  button.opt.bad{background:#FECACA;border-color:#EF4444}
+  select{font-family:inherit;font-size:17px;font-weight:700;padding:8px;border-radius:10px;border:3px solid #FDBA74;background:#fff}
+  canvas{width:100%;height:380px;display:block;background:#FFFDF7;border:3px solid #FDBA74;border-radius:14px;touch-action:pan-y;cursor:crosshair}
+  canvas.small{height:290px}
+  canvas:focus{outline:4px solid #FDE047}
+  .ctrl{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:10px 18px;margin:8px 0}
+  .ctrl label{display:block;font-size:16px}
+  .ctrl input[type=range]{width:100%;accent-color:#F97316;height:28px}
+  .ctrl output{color:#C2410C;font-size:20px}
+  .legend span{display:inline-block;margin-right:16px;font-size:16px}
+  .chip{display:inline-block;width:26px;height:8px;border-radius:4px;vertical-align:middle;margin-right:6px}
+  .status{font-size:18px;color:#92400E}
+  .box{background:#FEF3C7;border-radius:12px;padding:10px 14px;margin-top:10px}
+  .big{font-size:22px;color:#9A3412}
+  .trend{font-size:21px;font-weight:900;margin:2px 0 6px}
+  .brow{display:flex;align-items:center;gap:8px;margin:5px 0;font-size:16px;flex-wrap:wrap}
+  .brow span{flex:0 0 235px}
+  .bt{flex:1;min-width:120px;height:14px;background:#FDE68A;border-radius:8px;overflow:hidden}
+  .bf{height:100%;border-radius:8px}
+  .sci{background:#ECFDF5;border-left:8px solid #10B981;border-radius:12px;padding:10px 14px;font-size:17px;margin-top:10px}
+  ol.tasks{padding-left:22px}
+  ol.tasks li{margin:10px 0}
+  ol.tasks small{display:block;color:#6B7280;font-weight:700;font-size:15px}
+  textarea{width:100%;min-height:80px;font:700 16px "Trebuchet MS",Arial,sans-serif;padding:8px;border:3px solid #FDBA74;border-radius:12px}
+  .q{margin:12px 0 18px;padding-bottom:10px;border-bottom:3px dashed #FED7AA}
+  .fb{font-weight:900;margin:6px 0}
+  .quote{background:#ECFDF5;border-left:8px solid #10B981;border-radius:12px;padding:12px 16px;font-size:20px}
+  @media(max-width:600px){body{font-size:16px}canvas{height:310px}.brow span{flex-basis:100%}}
+</style>
+</head>
+<body>
+<div class="wrap">
+<h1>🌡️ Булану және конденсация: температура–уақыт графигі</h1>
+<p class="lead">Режимді таңда, «Бастау» батырмасын бас да, графиктің қалай салынып жатқанын бақыла. Графиктегі кез келген нүктені бассаң, сол мезеттегі температураны көресің.</p>
+
+<!-- ============ 1. СИМУЛЯЦИЯ ============ -->
+<div class="card">
+  <h2>1. Режимді таңда</h2>
+  <div class="row">
+    <button class="pick active" id="bEvap">☀️ Булану</button>
+    <button class="pick" id="bCond">☁️ Конденсация</button>
+  </div>
+  <div class="row" id="scenBox" style="display:none">
+    <button class="pick active" id="bSteam">Таза су буы (1 атм)</button>
+    <button class="pick" id="bHumid">Ылғалды ауа (шық)</button>
+  </div>
+  <div class="ctrl" id="controls"></div>
+  <div class="row" id="toggles"></div>
+
+  <canvas id="cv" tabindex="0" aria-label="Температура–уақыт графигі"></canvas>
+  <div class="legend" style="margin-top:8px">
+    <span><i class="chip" style="background:#DC2626"></i>температура жоғарылайды</span>
+    <span><i class="chip" style="background:#2563EB"></i>төмендейді</span>
+    <span><i class="chip" style="background:#059669"></i>тұрақты (немесе тұрақтыға жуық)</span>
+  </div>
+
+  <div class="row">
+    <button id="bStart" class="green">▶ Бастау</button>
+    <button id="bPause" class="grey">⏸ Тоқтату</button>
+    <button id="bReset" class="red">↺ Қайта бастау</button>
+    <button id="bEnd" class="pick">⏭ Соңына дейін</button>
+    <label>Жылдамдық:
+      <select id="speed"><option value="2">баяу</option><option value="5" selected>орташа</option><option value="12">жылдам</option></select>
+    </label>
+  </div>
+  <div class="status" id="status">Дайын. «Бастау» батырмасын бас.</div>
+
+  <div class="box" id="readout"></div>
+  <div class="sci" id="sci"></div>
+</div>
+
+<!-- ============ 2. ЗЕРТТЕУ ТАПСЫРМАЛАРЫ ============ -->
+<div class="card">
+  <h2>2. Зерттеу тапсырмалары</h2>
+  <ol class="tasks">
+    <li><label><input type="checkbox"> Сұйық буланған кезде оның температурасы уақыт бойынша қалай өзгеруі мүмкін екенін зертте.</label>
+      <small>Кеңес: «Булану» режимінде әдепкі мәндермен графикті салып шық. Содан кейін судың бастапқы температурасын өзгертіп көр (қыздырылған және суық су).</small></li>
+    <li><label><input type="checkbox"> Сұйықтың температурасына қоршаған ортаның температурасы мен жылу алмасудың әсерін қарастыр.</label>
+      <small>Кеңес: ортаның температурасын, ылғалдылықты, желді және ыдыстың жылу алмасуын өзгерт. Графиктің нүктесін таңдап, «ортадан келетін жылу» мен «булану салқындатуы» жолдарын салыстыр.</small></li>
+    <li><label><input type="checkbox"> Су буы салқындап, конденсацияланған кезде температураның уақыт бойынша өзгерісін бақыла.</label>
+      <small>Кеңес: «Конденсация» режимінде алдымен «Таза су буын», сосын «Ылғалды ауаны» қарап шық.</small></li>
+    <li><label><input type="checkbox"> Температура–уақыт графигіндегі температураның жоғарылауын, төмендеуін және тұрақты қалуын ажырат.</label>
+      <small>Кеңес: қисықтың түсі бағытты көрсетеді (қызыл – өседі, көк – төмендейді, жасыл – тұрақты). Әр түсті учаскеден нүкте таңда.</small></li>
+    <li><label><input type="checkbox"> Графикке сүйеніп, булану мен конденсация үдерістерінің ерекшеліктерін түсіндір.</label>
+      <small>Кеңес: төмендегі қорытындыны өз сөзіңмен жаз, содан кейін 3 сұраққа жауап бер.</small></li>
+  </ol>
+  <textarea id="notes" placeholder="Өз қорытындыңды осында жаз: булану кезінде температура ..., конденсация кезінде температура ..., себебі ..."></textarea>
+</div>
+
+<!-- ============ 3. ГРАФИКТІ ТАЛДАУ ============ -->
+<div class="card">
+  <h2>3. Графикті талда (3 сұрақ)</h2>
+
+  <div class="q">
+    <div>1. Таза су буының конденсациясы графигі (қоршаған орта 20 °C). Конденсация жүріп жатқанда температура <b>тұрақты</b> қалатын мезетті графиктен таңда, содан кейін «Тексеру» батырмасын бас.</div>
+    <canvas id="q1cv" class="small"></canvas>
+    <div class="row"><button id="q1btn">✔ Тексеру</button></div>
+    <div class="fb" id="q1fb"></div>
+  </div>
+
+  <div class="q">
+    <div>2. Графикте судың булануы көрсетілген (қоршаған орта 25 °C, су 40 °C-тан басталады). Су қоршаған орта температурасынан төмен түсті ме? Бұл нені білдіреді?</div>
+    <canvas id="q2cv" class="small"></canvas>
+    <div id="q2opts"></div>
+    <div class="fb" id="q2fb"></div>
+  </div>
+
+  <div class="q">
+    <div>3. Ылғалды ауа графигінде температура шамамен <span id="tdTxt">24</span> °C-тан төмен түскенде түсу жылдамдығы өзгерген. Неге?</div>
+    <canvas id="q3cv" class="small"></canvas>
+    <div id="q3opts"></div>
+    <div class="fb" id="q3fb"></div>
+  </div>
+
+  <div class="fb" id="score" style="font-size:22px"></div>
+</div>
+
+<!-- ============ 4. ҚҰНДЫЛЫҚ ============ -->
+<div class="card">
+  <h2>4. Су айналымы және туған жер</h2>
+  <p><b>Су айналымы:</b> Күн қыздырғанда өзен, көл, теңіз бетінен су <b>буланады</b>. Су буы көтеріліп, салқындап, <b>конденсацияланады</b> да бұлт түзеді. Одан жаңбыр немесе қар болып, су туған жерге қайта түседі. Бұл екі үдеріс болмаса, жер кеуіп, тіршілік тоқтар еді.</p>
+  <p><b>Графиктен не көрдік:</b> булану суды салқындатады, ал конденсация кезінде жылу бөлінеді. Яғни су айналымы энергиямен тығыз байланысты.</p>
+  <p class="quote">«Туған жердей жер болмас, туған елдей ел болмас.»<br><small>Қазақ мақалы</small></p>
+  <p>Туған жеріңнің өзені, көлі, бұлағы — осы айналымның бір бөлігі. Суды және энергияны үнемдесек, туған жерімізді қорғаймыз. Мысалы, Арал теңізінің тартылуы су көздеріне ұқыпсыз қарауға болмайтынын көрсетеді: оған құятын өзендердің суы көп алынған, ал булану жалғасқан.</p>
+  <p>Өзіңе бір міндет таңда:</p>
+  <div id="pledge"></div>
+  <div class="fb" id="pledgeFb"></div>
+</div>
+</div>
+
+<script>
+/* ======================================================
+   БӨЛІМ A. ЕСЕПТЕУ МОДЕЛЬДЕРІ
+   Әр модель температураның уақытқа тәуелділігін есептейді.
+   Бұл — оқуға арналған ЖЕҢІЛДЕТІЛГЕН модельдер.
+   ====================================================== */
+const $=id=>document.getElementById(id);
+const fmt=(x,d=1)=>x.toFixed(d).replace('.',',');
+// Қаныққан су буының қысымы (гПа), Магнус формуласы
+const psat=T=>6.112*Math.exp(17.62*T/(243.12+T));
+const COL={rise:'#DC2626',fall:'#2563EB',flat:'#059669'};
+const NAME={rise:'↗ температура ЖОҒАРЫЛАЙДЫ',fall:'↘ температура ТӨМЕНДЕЙДІ',flat:'→ температура ТҰРАҚТЫ'};
+
+// Әр нүктеде графиктің еңісін есептеп, "өседі / түседі / тұрақты" деп бөледі
+function finish(m){
+  const n=m.T.length,w=4;m.slope=[];m.cls=[];
+  for(let i=0;i<n;i++){
+    const a=Math.max(0,i-w),b=Math.min(n-1,i+w);
+    const s=(m.T[b]-m.T[a])/(m.t[b]-m.t[a]);
+    m.slope.push(s);
+    m.cls.push(s>0.12?'rise':(s<-0.12?'fall':'flat'));
+  }
+  return m;
+}
+function bar(label,val,color){
+  const wd=Math.min(100,Math.abs(val)/3.5*100);
+  return '<div class="brow"><span>'+label+'</span><div class="bt"><div class="bf" style="width:'+wd+'%;background:'+color+'"></div></div><b>'+(val>=0?'+':'−')+fmt(Math.abs(val),2)+' °C/мин</b></div>';
+}
+
+/* --- 1) БУЛАНУ: ашық ыдыстағы су (қайнамайды) ---
+   Температураның өзгеруі = ортадан келетін жылу − булану салқындатуы
+   Булану салқындатуы судың температурасына, ауаның ылғалдылығына және желге байланысты. */
+function modelEvap(p){
+  const c=0.03, w=p.wind?2.2:1, k=p.poor?0.012:0.03, dt=0.05, xmax=60, N=1200;
+  const sat=psat(p.Ta)*p.RH/100;                 // ауадағы бу қысымы
+  const env=T=>k*(p.Ta-T);                       // ортамен жылу алмасу
+  const ev=T=>c*w*(psat(T)-sat);                 // булану салқындатуы
+  const f=T=>env(T)-ev(T);
+  const t=[],T=[];let x=p.T0;
+  for(let i=0;i<=N;i++){
+    t.push(+(i*dt).toFixed(4));T.push(x);
+    const k1=f(x),k2=f(x+k1*dt/2);x+=k2*dt;
+  }
+  return finish({kind:'evap',t,T,dt,xmax,ymin:0,ymax:60,
+    refs:[{y:p.Ta,label:'Қоршаған орта: '+p.Ta+' °C',color:'#B45309'}],
+    describe(i){
+      const Tw=T[i],e=env(Tw),v=ev(Tw),net=e-v;
+      let msg;
+      if(Math.abs(net)<0.04) msg='Екі әсер шамамен теңесті, сондықтан температура тұрақтыға жуық.';
+      else if(net>0) msg='Ортадан келетін жылу булану салқындатуынан көп, сондықтан су қызады.';
+      else msg='Булану салқындатуы ортадан келетін жылудан көп, сондықтан су салқындайды.';
+      if(v<0) msg+=' Су шық нүктесінен салқын: сұйыққа бу конденсацияланып, жылу бөлінуде.';
+      return bar('Ортадан келетін жылу',e,'#DC2626')+bar('Булану салқындатуы',-v,'#2563EB')+bar('Қорытынды өзгеріс',net,'#7C3AED')+'<div>'+msg+'</div>';
+    }});
+}
+
+/* --- 2) КОНДЕНСАЦИЯ: таза су буы, 1 атм ---
+   Энергия (H) арқылы есептеледі: бу салқындайды → 100 °C-та конденсация (жылу бөлінеді,
+   температура тұрақты) → пайда болған су салқындайды. */
+function modelSteam(p){
+  const h=0.42, dtS=0.05, sub=5, dt=dtS/sub, xmax=45, N=Math.round(xmax/dtS);
+  const TofH=H=> H>=640 ? 100+(H-640)/0.5 : (H>100 ? 100 : H);
+  let H=655;                                      // бастапқы күй: 130 °C-тағы бу
+  const t=[],T=[],Hs=[];
+  for(let i=0;i<=N;i++){
+    t.push(+(i*dtS).toFixed(4));T.push(TofH(H));Hs.push(H);
+    for(let s=0;s<sub;s++) H-=h*(TofH(H)-p.Ta)*dt;
+  }
+  return finish({kind:'steam',t,T,dt,xmax,ymin:0,ymax:140,
+    refs:[{y:100,label:'100 °C',color:'#B45309'},{y:p.Ta,label:'Қоршаған орта: '+p.Ta+' °C',color:'#B45309'}],
+    describe(i){
+      const Hh=Hs[i],Tw=T[i],loss=h*(Tw-p.Ta);
+      let msg,frac='';
+      if(Hh>640) msg='Бу әлі конденсацияланбаған: ол салқындап, 100 °C-қа жақындап келеді.';
+      else if(Hh>100){
+        const fr=(Hh-100)/540*100;
+        frac='<div>Әлі буға тән бөлігі: <b>'+fmt(fr,0)+' %</b></div>';
+        msg='Конденсация жүріп жатыр: бу сұйыққа айналғанда жылу бөлінеді, сондықтан температура 100 °C-та тұрақты қалады.';
+      }
+      else if(Tw-p.Ta<0.5) msg='Су қоршаған орта температурасына жетті.';
+      else msg='Бүкіл бу сұйыққа айналды. Енді су қоршаған ортаға жылу беріп, салқындап жатыр.';
+      return frac+'<div>Ортаға берілетін жылу ағыны: <b>'+fmt(loss,1)+' кал/(г·мин)</b></div><div>'+msg+'</div>';
+    }});
+}
+
+/* --- 3) КОНДЕНСАЦИЯ: ылғалды ауа суытылады (шық) ---
+   Ауа шық нүктесіне (Td) дейін суығанда бу конденсацияланып, жылу бөліне бастайды,
+   сондықтан суыну баяулайды. */
+function modelHumid(p){
+  const T0=30,k=0.08,dtS=0.05,xmax=45,N=900;
+  const g=Math.log(p.RH/100)+17.62*T0/(243.12+T0);
+  const Td=243.12*g/(17.62-g);                    // шық нүктесі
+  const t=[],T=[];let x=T0;
+  for(let i=0;i<=N;i++){
+    t.push(+(i*dtS).toFixed(4));T.push(x);
+    const factor=(x<=Td)?0.45:1;                  // шық түзілгенде суыну баяулайды
+    x+=-k*(x-p.Ta)*factor*dtS;
+  }
+  const refs=[{y:p.Ta,label:'Қоршаған орта: '+p.Ta+' °C',color:'#B45309'},
+              {y:Td,label:'Шық нүктесі ≈ '+fmt(Td,0)+' °C',color:'#047857'}];
+  return finish({kind:'humid',t,T,dt:dtS,xmax,ymin:0,ymax:35,refs,Td,
+    describe(i){
+      const Tw=T[i];let msg;
+      if(Tw>Td+0.05){
+        msg='Ауаның температурасы шық нүктесінен жоғары: шық түзілмейді, ауа тек қоршаған ортаға жылу беріп салқындайды.';
+        if(p.Ta>=Td) msg+=' Қоршаған орта шық нүктесінен жылы, сондықтан бұл жағдайда шық мүлде түзілмейді.';
+      }
+      else msg='Температура шық нүктесіне жетті: су буы конденсацияланып (шық), жылу бөліп жатыр. Сондықтан ауа баяу салқындайды.';
+      return '<div>Шық нүктесі ≈ <b>'+fmt(Td,1)+' °C</b></div><div>'+msg+'</div>';
+    }});
+}
+/*UI*/
+/* ======================================================
+   БӨЛІМ B. ГРАФИК САЛУ (негізгі график те, сұрақтардағы графиктер де осыны қолданады)
+   ====================================================== */
+function drawChart(cv,m,o){
+  const dpr=window.devicePixelRatio||1,cw=cv.clientWidth,ch=cv.clientHeight;
+  if(!cw||!ch) return;
+  if(cv.width!==Math.round(cw*dpr)||cv.height!==Math.round(ch*dpr)){cv.width=Math.round(cw*dpr);cv.height=Math.round(ch*dpr);}
+  const g=cv.getContext('2d');g.setTransform(dpr,0,0,dpr,0,0);g.clearRect(0,0,cw,ch);
+  const L=58,R=16,Tp=18,B=48,pw=cw-L-R,ph=ch-Tp-B;
+  const X=t=>L+t/m.xmax*pw, Y=v=>Tp+(1-(v-m.ymin)/(m.ymax-m.ymin))*ph;
+  cv._map={L,pw,xmax:m.xmax};
+  g.font='800 14px Arial';g.textBaseline='middle';
+  (o.shade||[]).forEach(s=>{g.fillStyle=s.color;g.fillRect(X(s.t1),Tp,X(s.t2)-X(s.t1),ph);});
+  // тор және осьтер
+  const xs=m.xmax>50?10:5, ysP=(m.ymax-m.ymin)>100?20:10;
+  g.strokeStyle='#F3E3CC';g.lineWidth=1;g.fillStyle='#6B4A1E';
+  g.textAlign='center';
+  for(let t=0;t<=m.xmax+1e-9;t+=xs){g.beginPath();g.moveTo(X(t),Tp);g.lineTo(X(t),Tp+ph);g.stroke();g.fillText(t,X(t),Tp+ph+14);}
+  g.textAlign='right';
+  for(let v=m.ymin;v<=m.ymax+1e-9;v+=ysP){g.beginPath();g.moveTo(L,Y(v));g.lineTo(L+pw,Y(v));g.stroke();g.fillText(v,L-8,Y(v));}
+  g.strokeStyle='#92400E';g.lineWidth=2.5;g.beginPath();g.moveTo(L,Tp);g.lineTo(L,Tp+ph);g.lineTo(L+pw,Tp+ph);g.stroke();
+  g.textAlign='center';g.fillStyle='#92400E';g.font='900 15px Arial';
+  g.fillText('Уақыт, мин',L+pw/2,ch-10);
+  g.save();g.translate(14,Tp+ph/2);g.rotate(-Math.PI/2);g.fillText('Температура, °C',0,0);g.restore();
+  // көмекші сызықтар (қоршаған орта, шық нүктесі, 100 °C)
+  g.font='800 13px Arial';g.textAlign='right';
+  (m.refs||[]).forEach(r=>{
+    g.strokeStyle=r.color;g.fillStyle=r.color;g.lineWidth=2;g.setLineDash([7,5]);
+    g.beginPath();g.moveTo(L,Y(r.y));g.lineTo(L+pw,Y(r.y));g.stroke();g.setLineDash([]);
+    g.fillText(r.label,L+pw-4,Y(r.y)-9);
+  });
+  // қисық
+  const n=Math.min(m.t.length-1,Math.floor(o.upTo/m.dt+1e-9));
+  g.lineWidth=4.5;g.lineCap='round';
+  for(let i=0;i<n;i++){
+    g.strokeStyle=o.mono?'#C2410C':COL[m.cls[i]];
+    g.beginPath();g.moveTo(X(m.t[i]),Y(m.T[i]));g.lineTo(X(m.t[i+1]),Y(m.T[i+1]));g.stroke();
+  }
+  let hx=m.t[n],hy=m.T[n];
+  if(n<m.t.length-1&&o.upTo>m.t[n]){
+    const f=(o.upTo-m.t[n])/m.dt;hx=o.upTo;hy=m.T[n]+f*(m.T[n+1]-m.T[n]);
+    g.strokeStyle=o.mono?'#C2410C':COL[m.cls[n]];
+    g.beginPath();g.moveTo(X(m.t[n]),Y(m.T[n]));g.lineTo(X(hx),Y(hy));g.stroke();
+  }
+  if(o.head){g.fillStyle='#fff';g.strokeStyle='#92400E';g.lineWidth=3;g.beginPath();g.arc(X(hx),Y(hy),7,0,Math.PI*2);g.fill();g.stroke();}
+  // таңдалған нүкте
+  if(o.sel!=null){
+    const i=o.sel,px=X(m.t[i]),py=Y(m.T[i]);
+    g.strokeStyle='#7C3AED';g.lineWidth=2;g.setLineDash([5,4]);
+    g.beginPath();g.moveTo(px,Tp);g.lineTo(px,Tp+ph);g.moveTo(L,py);g.lineTo(px,py);g.stroke();g.setLineDash([]);
+    g.fillStyle='#7C3AED';g.beginPath();g.arc(px,py,8,0,Math.PI*2);g.fill();
+    const txt='t='+fmt(m.t[i])+' мин, T='+fmt(m.T[i])+' °C';
+    g.font='900 14px Arial';const tw=g.measureText(txt).width+16;
+    let bx=px+12;if(bx+tw>L+pw)bx=px-12-tw;
+    let by=py-34;if(by<Tp)by=py+14;
+    g.fillStyle='#F5F3FF';g.strokeStyle='#7C3AED';g.lineWidth=2;
+    g.fillRect(bx,by,tw,24);g.strokeRect(bx,by,tw,24);
+    g.fillStyle='#4C1D95';g.textAlign='left';g.fillText(txt,bx+8,by+12);
+  }
+}
+// Тышқанмен/саусақпен басқан орыннан уақыт нөмірін табу
+function idxFromEvent(cv,e,m,maxT){
+  const r=cv.getBoundingClientRect(),mp=cv._map;if(!mp)return 0;
+  let t=(e.clientX-r.left-mp.L)/mp.pw*mp.xmax;
+  t=Math.max(0,Math.min(maxT,t));
+  return Math.round(t/m.dt);
+}
+
+/* ======================================================
+   БӨЛІМ C. НЕГІЗГІ СИМУЛЯЦИЯ: күй, батырмалар, анимация
+   ====================================================== */
+const S={mode:'evap',scen:'steam',run:false,t:0,sel:null,speed:5,last:0};
+const P={evap:{Ta:25,T0:40,RH:50,wind:false,poor:false},steam:{Ta:20},humid:{Ta:5,RH:70}};
+let M=null,lastRead='';
+const key=()=>S.mode==='evap'?'evap':S.scen;
+function build(){const k=key();M=k==='evap'?modelEvap(P.evap):(k==='steam'?modelSteam(P.steam):modelHumid(P.humid));}
+
+const SCI={
+  evap:'<b>Ғылыми ескерту:</b> булану кез келген температурада жүреді, сұйықтың қайнауын күтпейді. Температура әрдайым тұрақты болмайды: булану кезінде сұйықтан ең жылдам молекулалар кетеді, сондықтан сұйық салқындайды. Қоршаған ортадан келетін жылу бұл салқындауды азайтады. Нәтижесінде су температурасы ортаның температурасына, ауаның ылғалдылығына, желге және ыдыс арқылы жылу алмасуға байланысты өзгереді. Қайнау — бұл басқа үдеріс: сұйықтың бүкіл көлемінде бу көпіршіктері түзіледі.',
+  steam:'<b>Ғылыми ескерту:</b> таза су буы 1 атм қысымда 100 °C-та конденсацияланады, ал конденсация кезінде жылу бөлінеді (меншікті булану жылуы шамамен 2,26 МДж/кг). Бүкіл бу сұйыққа айналғанша температура тұрақты қалады, содан кейін пайда болған су салқындайды. Егер бумен бірге ауа болса немесе бу жылдам таралса, температура басқаша өзгеруі мүмкін. Бұл — жеңілдетілген модель.',
+  humid:'<b>Ғылыми ескерту:</b> ылғалды ауа суытылғанда ауадағы су буы <b>шық нүктесінде</b> конденсацияланады (шық, тұман). Конденсация кезінде жылу бөлінеді, сондықтан шық түзіле бастағаннан кейін ауа баяулап салқындайды. Қоршаған орта шық нүктесінен жылы болса, шық түзілмейді. Бұл — жеңілдетілген модель, нақты температура жағдайларға байланысты.'
+};
+function setSci(){$('sci').innerHTML=SCI[key()];}
+function setStatus(txt){$('status').textContent=txt;}
+
+function buildControls(){
+  const k=key(),box=$('controls'),tg=$('toggles');box.innerHTML='';tg.innerHTML='';
+  const defs=k==='evap'
+    ?[['Ta','Қоршаған орта температурасы',15,40,1,'°C'],['T0','Судың бастапқы температурасы',10,50,1,'°C'],['RH','Ауаның салыстырмалы ылғалдылығы',30,90,5,'%']]
+    :(k==='steam'
+      ?[['Ta','Қоршаған орта температурасы',0,40,1,'°C']]
+      :[['Ta','Суық бет / орта температурасы',0,25,1,'°C'],['RH','Ауаның ылғалдылығы (30 °C-та)',40,95,5,'%']]);
+  defs.forEach(d=>{
+    const id=d[0],div=document.createElement('div');
+    div.innerHTML='<label>'+d[1]+': <output>'+P[k][id]+'</output> '+d[5]+'<input type="range" min="'+d[2]+'" max="'+d[3]+'" step="'+d[4]+'" value="'+P[k][id]+'"></label>';
+    const inp=div.querySelector('input'),out=div.querySelector('output');
+    inp.oninput=()=>{P[k][id]=+inp.value;out.textContent=inp.value;build();resetRun('Параметр өзгерді. Графикті қайта бастаңыз.');};
+    box.appendChild(div);
+  });
+  if(k==='evap'){
+    const w=document.createElement('button'),x=document.createElement('button');
+    const paint=()=>{w.textContent='💨 Жел: '+(P.evap.wind?'бар':'жоқ');w.className=P.evap.wind?'':'grey';
+      x.textContent='🧱 Жылу алмасу: '+(P.evap.poor?'нашар (оқшауланған ыдыс)':'жақсы');x.className=P.evap.poor?'':'grey';};
+    w.onclick=()=>{P.evap.wind=!P.evap.wind;paint();build();resetRun('Параметр өзгерді. Графикті қайта бастаңыз.');};
+    x.onclick=()=>{P.evap.poor=!P.evap.poor;paint();build();resetRun('Параметр өзгерді. Графикті қайта бастаңыз.');};
+    paint();tg.appendChild(w);tg.appendChild(x);
+  }
+}
+function resetRun(msg){S.run=false;S.t=0;S.sel=null;lastRead='';setStatus(msg||'Дайын. «Бастау» батырмасын бас.');}
+function switchTo(mode,scen){
+  S.mode=mode;if(scen)S.scen=scen;
+  $('bEvap').classList.toggle('active',mode==='evap');$('bCond').classList.toggle('active',mode==='cond');
+  $('scenBox').style.display=mode==='cond'?'flex':'none';
+  $('bSteam').classList.toggle('active',S.scen==='steam');$('bHumid').classList.toggle('active',S.scen==='humid');
+  build();buildControls();setSci();resetRun();
+}
+$('bEvap').onclick=()=>switchTo('evap');
+$('bCond').onclick=()=>switchTo('cond');
+$('bSteam').onclick=()=>switchTo('cond','steam');
+$('bHumid').onclick=()=>switchTo('cond','humid');
+$('bStart').onclick=()=>{if(S.t>=M.xmax-1e-6){S.t=0;S.sel=null;}S.run=true;S.last=performance.now();setStatus('Жүріп жатыр…');};
+$('bPause').onclick=()=>{if(S.run){S.run=false;setStatus('Тоқтатылды. Графиктен нүкте таңдап көр.');}};
+$('bReset').onclick=()=>resetRun();
+$('bEnd').onclick=()=>{S.run=false;S.t=M.xmax;setStatus('Графиктің толық түрі. Нүктелерді таңдап талда.');};
+$('speed').onchange=e=>{S.speed=+e.target.value;};
+
+// Графиктен нүкте таңдау (тышқан, саусақ, пернетақта)
+const cv=$('cv');let drag=false;
+function pickMain(e){S.sel=idxFromEvent(cv,e,M,S.t);}
+cv.addEventListener('pointerdown',e=>{drag=true;pickMain(e);});
+cv.addEventListener('pointermove',e=>{if(drag)pickMain(e);});
+window.addEventListener('pointerup',()=>{drag=false;});
+cv.addEventListener('keydown',e=>{
+  if(e.key!=='ArrowLeft'&&e.key!=='ArrowRight')return;e.preventDefault();
+  const cur=Math.floor(S.t/M.dt),base=S.sel==null?cur:S.sel;
+  S.sel=Math.max(0,Math.min(cur,base+(e.key==='ArrowRight'?20:-20)));
+});
+
+function readoutHTML(i,label){
+  const c=M.cls[i],s=M.slope[i];
+  const sl=Math.abs(s)<0.005?'0':((s>0?'+':'−')+fmt(Math.abs(s),2));
+  return '<div class="big">'+label+': t = '+fmt(M.t[i])+' мин &nbsp;·&nbsp; T = '+fmt(M.T[i])+' °C</div>'
+    +'<div class="trend" style="color:'+COL[c]+'">'+NAME[c]+' <small>(≈ '+sl+' °C/мин)</small></div>'+M.describe(i);
+}
+function updateReadout(){
+  let html;
+  if(S.sel!=null) html=readoutHTML(S.sel,'Таңдалған нүкте')+'<div style="color:#6B7280;font-size:15px">Басқа нүктені таңдау үшін графикті бас немесе ←/→ пернелерін қолдан.</div>';
+  else if(S.t>0) html=readoutHTML(Math.min(M.t.length-1,Math.floor(S.t/M.dt)),'Қазір');
+  else html='Графиктегі кез келген нүктені бас: сол мезеттегі уақыт пен температура осында шығады. Бастапқы температура: <b>'+fmt(M.T[0])+' °C</b>.';
+  if(html!==lastRead){$('readout').innerHTML=html;lastRead=html;}
+}
+function frame(ts){
+  if(S.run){
+    const d=Math.min(0.05,(ts-S.last)/1000);S.t+=d*S.speed;
+    if(S.t>=M.xmax){S.t=M.xmax;S.run=false;setStatus('Аяқталды. Графикті талдап, нүктелерді таңдап көр.');}
+  }
+  S.last=ts;
+  drawChart(cv,M,{upTo:S.t,sel:S.sel,head:true});
+  updateReadout();
+  requestAnimationFrame(frame);
+}
+
+/* ======================================================
+   БӨЛІМ D. ГРАФИКТІ ТАЛДАУҒА АРНАЛҒАН 3 СҰРАҚ
+   ====================================================== */
+const qSteam=modelSteam({Ta:20});
+const qEvap=modelEvap({Ta:25,T0:40,RH:40,wind:false,poor:false});
+const qHum=modelHumid({Ta:5,RH:70});
+$('tdTxt').textContent=fmt(qHum.Td,0);
+const plat=qSteam.T.map((v,i)=>v===100?i:-1).filter(i=>i>=0);
+const pI1=plat[0],pI2=plat[plat.length-1];
+const Q={q1sel:null,q1shade:null,res:[null,null,null]};
+function drawQuiz(){
+  drawChart($('q1cv'),qSteam,{upTo:qSteam.xmax,mono:true,sel:Q.q1sel,shade:Q.q1shade});
+  drawChart($('q2cv'),qEvap,{upTo:qEvap.xmax,mono:true});
+  drawChart($('q3cv'),qHum,{upTo:qHum.xmax,mono:true});
+}
+function setResult(i,ok){
+  Q.res[i]=ok;
+  if(Q.res.every(r=>r!==null)){
+    const s=Q.res.filter(Boolean).length;
+    $('score').textContent='Нәтиже: '+s+' / 3'+(s===3?' — тамаша, графикті жақсы оқисың!':(s===2?' — жақсы!':' — симуляцияны қайталап көр.'));
+  }
+}
+// 1-сұрақ: графиктен нүкте таңдау
+let q1done=false,q1drag=false;
+const q1=$('q1cv');
+const q1pick=e=>{if(q1done)return;Q.q1sel=idxFromEvent(q1,e,qSteam,qSteam.xmax);drawQuiz();};
+q1.addEventListener('pointerdown',e=>{q1drag=true;q1pick(e);});
+q1.addEventListener('pointermove',e=>{if(q1drag)q1pick(e);});
+window.addEventListener('pointerup',()=>{q1drag=false;});
+$('q1btn').onclick=()=>{
+  if(q1done)return;
+  const fb=$('q1fb');
+  if(Q.q1sel==null){fb.textContent='Алдымен графиктен нүкте таңда.';return;}
+  q1done=true;$('q1btn').disabled=true;
+  const i=Q.q1sel,ok=i>=pI1&&i<=pI2;
+  Q.q1shade=[{t1:qSteam.t[pI1],t2:qSteam.t[pI2],color:'rgba(16,185,129,0.22)'}];
+  if(ok) fb.textContent='✅ Дұрыс! Бұл мезетте бу сұйыққа айналып жатыр: конденсация кезінде жылу бөлінеді, сондықтан температура 100 °C-та тұрақты қалады.';
+  else if(i<pI1) fb.textContent='❌ Қате. Бұл учаскеде бу әлі салқындап жатыр, температура төмендейді. Тұрақты учаске жасыл түспен көрсетілді: конденсация кезінде жылу бөлінеді.';
+  else fb.textContent='❌ Қате. Бұл учаскеде бүкіл бу сұйыққа айналып болды, пайда болған су салқындап жатыр. Тұрақты учаске жасыл түспен көрсетілді.';
+  setResult(0,ok);drawQuiz();
+};
+// 2-, 3-сұрақтар: графикке қарап жауап таңдау
+function mc(boxId,fbId,qi,opts,right,why){
+  const box=$(boxId);let done=false;const btns=[];
+  opts.forEach((t,k)=>{
+    const b=document.createElement('button');b.className='opt';b.textContent=t;
+    b.onclick=()=>{
+      if(done)return;done=true;
+      if(k===right){b.classList.add('ok');$(fbId).textContent='✅ Дұрыс! '+why;setResult(qi,true);}
+      else{b.classList.add('bad');btns[right].classList.add('ok');$(fbId).textContent='❌ Қате. '+why;setResult(qi,false);}
+    };
+    box.appendChild(b);btns.push(b);
+  });
+}
+mc('q2opts','q2fb',1,[
+  'Иә. Булану кезінде жылдам молекулалар сұйықтан кетеді, сұйық салқындайды, сондықтан су қоршаған ортадан да салқын бола алады.',
+  'Жоқ. Булану кезінде температура әрдайым қоршаған орта температурасымен бірдей болады.',
+  'Жоқ. Булану кезінде су әрдайым 100 °C-та тұрады.'],0,
+  'Булану сұйықты салқындатады, ал ортадан жылу келіп оны азайтады. Екеуі теңескенде температура тұрақтыға жуық болады, әрі ортадан төмен болуы мүмкін.');
+mc('q3opts','q3fb',2,[
+  'Ауа қыза бастады.',
+  'Шық түзіледі: су буы конденсацияланып, жылу бөледі, сондықтан ауа баяу салқындайды.',
+  'Су қайнап, булану тоқтады.'],1,
+  'Шық нүктесінде су буы конденсацияланады, ал конденсация кезінде жылу бөлінеді. Бұл жылу суынуды баяулатады.');
+
+/* ======================================================
+   БӨЛІМ E. ТУҒАН ЖЕР: СУДЫ ЖӘНЕ ЭНЕРГИЯНЫ ҮНЕМДЕУ
+   ====================================================== */
+['Шәйнекке керегінше ғана су құямын','Тамақ пісіргенде ыдыстың қақпағын жабамын','Тіс тазалағанда кранды жауып қоямын','Өзен-көл жағасын таза ұстаймын'].forEach(t=>{
+  const b=document.createElement('button');b.className='green';b.style.margin='4px 6px 4px 0';b.textContent=t;
+  b.onclick=()=>{$('pledgeFb').textContent='🌍 Керемет! «'+t+'»: бұл су мен энергияны үнемдеп, туған жерді қорғаудың нақты қадамы.';};
+  $('pledge').appendChild(b);
+});
+
+// Іске қосу
+window.addEventListener('resize',drawQuiz);
+build();buildControls();setSci();drawQuiz();
+requestAnimationFrame(frame);
+</script>
+</body>
+</html>

@@ -1,0 +1,322 @@
+<!DOCTYPE html>
+<html lang="kk">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Булану және конденсация</title>
+<style>
+  /* ===== Түстер мен қаріп (ашық фон, ірі әрі қалың қаріп) ===== */
+  :root{color-scheme:light}
+  *{box-sizing:border-box}
+  body{margin:0;padding:14px;background:#FFF8EC;color:#2B2B2B;
+       font:700 18px/1.45 "Trebuchet MS",Arial,sans-serif}
+  .wrap{max-width:920px;margin:0 auto}
+  h1{font-size:28px;font-weight:900;color:#C2410C;margin:4px 0 12px}
+  h2{font-size:22px;font-weight:900;color:#B45309;margin:0 0 10px}
+  .card{background:#fff;border:3px solid #FDBA74;border-radius:18px;padding:14px;
+        margin-bottom:16px;box-shadow:0 4px 0 #FED7AA}
+  canvas{width:100%;display:block;background:#FFFDF7;border:3px solid #FDBA74;border-radius:14px}
+  .row{display:flex;flex-wrap:wrap;gap:10px;margin:10px 0}
+  button{font-family:inherit;font-size:18px;font-weight:900;border:0;border-radius:14px;
+         padding:12px 18px;color:#fff;background:#F97316;box-shadow:0 4px 0 #C2410C;cursor:pointer}
+  button:active{transform:translateY(2px)}
+  button.green{background:#10B981;box-shadow:0 4px 0 #047857}
+  button.grey{background:#9CA3AF;box-shadow:0 4px 0 #6B7280}
+  button.active{outline:4px solid #FDE047}
+  .info{background:#FEF3C7;border-radius:12px;padding:10px 14px;font-size:19px}
+  .stats{display:flex;flex-wrap:wrap;gap:10px;margin-top:10px}
+  .stats div{flex:1;min-width:130px;background:#FFEDD5;border-radius:12px;padding:8px 12px}
+  .stats b{font-size:26px;color:#C2410C}
+  .legend span{display:inline-block;margin-right:14px}
+  .dot{display:inline-block;width:14px;height:14px;border-radius:50%;vertical-align:middle;margin-right:4px}
+  ol.tasks li{margin:8px 0}
+  ol.tasks label{cursor:pointer}
+  table{width:100%;border-collapse:collapse;margin-top:8px}
+  th,td{border:3px solid #FDBA74;padding:8px;text-align:left;vertical-align:middle}
+  th{background:#FFEDD5}
+  select{width:100%;font-weight:700;font-size:16px;font-family:inherit;padding:8px;border-radius:10px;border:3px solid #FDBA74;background:#fff}
+  select.ok{background:#BBF7D0;border-color:#10B981}
+  select.bad{background:#FECACA;border-color:#EF4444}
+  .q{margin:14px 0}
+  .q button{display:block;width:100%;text-align:left;margin:6px 0;background:#fff;color:#2B2B2B;
+            border:3px solid #FDBA74;box-shadow:none}
+  .q button.ok{background:#BBF7D0;border-color:#10B981}
+  .q button.bad{background:#FECACA;border-color:#EF4444}
+  .fb{font-weight:900;margin:4px 0}
+  .quote{background:#ECFDF5;border-left:8px solid #10B981;border-radius:12px;padding:12px 16px;font-size:20px}
+  @media(max-width:560px){body{font-size:16px}th,td{padding:4px}}
+</style>
+</head>
+<body>
+<div class="wrap">
+<h1>💧 Булану және конденсация</h1>
+
+<!-- ============ 1. СИМУЛЯЦИЯ ============ -->
+<div class="card">
+  <h2>1. Молекулаларды бақыла</h2>
+  <canvas id="cv" width="640" height="360"></canvas>
+  <div class="row">
+    <button id="bEvap">☀️ Булану</button>
+    <button id="bCond" class="green">☁️ Конденсация</button>
+    <button id="bStop" class="grey">⏸ Тек бақылау</button>
+  </div>
+  <div class="info" id="info">Әр нүкте — бір молекула. Сұйықтағы молекулалар бір-біріне жақын тұрып, баяу қозғалады. Түймені бас!</div>
+  <div class="stats">
+    <div>Сұйықта: <b id="nL">0</b></div>
+    <div>Газда (бу): <b id="nG">0</b></div>
+    <div>Ұшып шықты: <b id="nE">0</b></div>
+    <div>Қайта оралды: <b id="nC">0</b></div>
+  </div>
+  <p class="legend">
+    <span><i class="dot" style="background:#0EA5E9"></i>сұйық молекуласы</span>
+    <span><i class="dot" style="background:#F97316"></i>бу молекуласы</span>
+    <span><i class="dot" style="background:#fff;border:3px solid #EF4444"></i>үдеріске қатысып жатқан</span>
+  </p>
+</div>
+
+<!-- ============ 2. ЗЕРТТЕУ ТАПСЫРМАЛАРЫ ============ -->
+<div class="card">
+  <h2>2. Зерттеу тапсырмалары</h2>
+  <ol class="tasks">
+    <li><label><input type="checkbox"> Сұйықтағы молекулалардың қозғалысын бақыла.</label></li>
+    <li><label><input type="checkbox"> Булану кезінде сұйықтың бетіндегі молекулаларда қандай өзгеріс болатынын анықта.</label></li>
+    <li><label><input type="checkbox"> Су буының молекулалары сұйыққа қайта оралғанда қандай үдеріс жүретінін түсіндір.</label></li>
+    <li><label><input type="checkbox"> «Булану» және «Конденсация» батырмаларын басып, молекулалардың қозғалысын салыстыр.</label></li>
+    <li><label><input type="checkbox"> Булану мен конденсацияның айырмашылығын кестеге түсір (төменде).</label></li>
+  </ol>
+
+  <h2 style="margin-top:14px">Салыстыру кестесі</h2>
+  <table id="tbl">
+    <tr><th></th><th>Булану</th><th>Конденсация</th></tr>
+  </table>
+  <div class="row"><button id="bCheck">✔ Кестені тексеру</button></div>
+  <div class="fb" id="tblFb"></div>
+</div>
+
+<!-- ============ 3. ТЕСТ ============ -->
+<div class="card">
+  <h2>3. Тест (3 сұрақ)</h2>
+  <div id="quiz"></div>
+  <div class="fb" id="score"></div>
+</div>
+
+<!-- ============ 4. ҚҰНДЫЛЫҚ ============ -->
+<div class="card">
+  <h2>4. Су айналымы және туған жер</h2>
+  <p><b>Су айналымы:</b> күн қыздырғанда өзен, көл, теңіз бетінен су <b>буланады</b> → бу көтеріліп, салқындап <b>конденсацияланады</b> да бұлт түзеді → жаңбыр немесе қар болып <b>туған жерге қайта түседі</b>. Булану мен конденсация болмаса, су айналымы тоқтап, жер кеуіп кетер еді.</p>
+  <p class="quote">«Туған жердей жер болмас, туған елдей ел болмас.»<br>
+  <small>Қазақ мақалы</small></p>
+  <p>Туған жеріңнің өзені, көлі, бұлағы — су айналымының бір бөлігі. Оны таза ұстап, суды үнемдесек, туған жерімізді қорғаймыз. Өзіңе бір міндет таңда:</p>
+  <div id="pledge"></div>
+  <div class="fb" id="pledgeFb"></div>
+</div>
+</div>
+
+<script>
+/* ======================================================
+   1-БӨЛІМ. МОЛЕКУЛАЛАРДЫҢ ҚОЗҒАЛЫСЫ
+   Әр молекула — {x, y, vx, vy, ring} деген нысан.
+   x, y — орны; vx, vy — жылдамдығы; ring — қызыл шеңбер көрсету керек пе.
+   ====================================================== */
+const cv = document.getElementById('cv');
+const g = cv.getContext('2d');
+const W = 640, H = 360;
+const SURFACE = 200;            // сұйық бетінің биіктігі (y осі төмен қарай өседі)
+let mode = 'idle';              // 'idle' | 'evap' | 'cond'
+let liquid = [], gas = [];      // сұйық және бу молекулалары
+let escaped = 0, returned = 0;  // санауыштар
+let tick = 0;
+
+// Бастапқы жағдай: сұйықта 70 молекула, газда 4
+function init(){
+  liquid = []; gas = []; escaped = 0; returned = 0;
+  for(let i=0;i<70;i++) liquid.push(newLiquid());
+  for(let i=0;i<4;i++)  gas.push(newGas(true));
+}
+function newLiquid(x,y){
+  return {x: x ?? 20+Math.random()*(W-40), y: y ?? SURFACE+10+Math.random()*(H-SURFACE-20),
+          vx:(Math.random()-.5)*1.2, vy:(Math.random()-.5)*1.2, ring:0};
+}
+function newGas(anywhere){
+  return {x:20+Math.random()*(W-40), y: anywhere ? 20+Math.random()*(SURFACE-50) : 12,
+          vx:(Math.random()-.5)*4, vy:(Math.random()-.5)*4, ring:0};
+}
+
+// Бір қадам: барлық молекуланы жылжыту
+function update(){
+  tick++;
+
+  // --- Сұйық молекулалары: баяу, бірақ тоқтамай қозғалады ---
+  for(const m of liquid){
+    m.vx += (Math.random()-.5)*0.3; m.vy += (Math.random()-.5)*0.3;
+    const sp = Math.hypot(m.vx,m.vy), max = (mode==='evap') ? 1.8 : 1.3;
+    if(sp>max){ m.vx*=max/sp; m.vy*=max/sp; }
+    m.x += m.vx; m.y += m.vy;
+    if(m.x<10||m.x>W-10) m.vx*=-1;
+    if(m.y>H-10) m.vy*=-1;
+    if(m.y<SURFACE+4) m.vy = Math.abs(m.vy);   // сұйықтың ішінде қалады
+    if(m.ring>0) m.ring--;
+  }
+
+  // --- БУЛАНУ: бет маңындағы ең жоғарғы молекула жылдамдап, ұшып шығады ---
+  if(mode==='evap' && tick%12===0){
+    let best = null;
+    for(const m of liquid) if(!best || m.y<best.y) best = m;   // ең жоғарғысы
+    if(best && liquid.length>25){
+      liquid.splice(liquid.indexOf(best),1);
+      best.vy = -(2.2+Math.random()*1.6); best.vx = (Math.random()-.5)*3; best.ring = 60;
+      gas.push(best); escaped++;
+    }
+  }
+
+  // --- КОНДЕНСАЦИЯ: жоғарыдан жаңа бу молекуласы пайда болып, төмен түседі ---
+  if(mode==='cond' && tick%12===0 && gas.length<60) { const m = newGas(false); m.ring = 60; m.vy = 1; gas.push(m); }
+
+  // --- Бу молекулалары ---
+  for(let i=gas.length-1;i>=0;i--){
+    const m = gas[i];
+    if(mode==='cond'){                      // конденсацияда молекулалар баяулап, төмен ауады
+      m.vy += 0.04; m.vx *= 0.995;
+    }
+    m.x += m.vx; m.y += m.vy;
+    if(m.x<8||m.x>W-8) m.vx*=-1;
+    if(m.y<8){ m.y=8; m.vy=Math.abs(m.vy); }
+    if(m.ring>0) m.ring--;
+    // Сұйық бетіне тиді ме?
+    if(m.y>=SURFACE){
+      const p = (mode==='cond') ? 1 : 0.15;   // конденсацияда сұйыққа қайта оралады
+      if(Math.random()<p){
+        gas.splice(i,1);
+        const l = newLiquid(m.x, SURFACE+6); l.ring = 60;
+        liquid.push(l); returned++;
+      } else { m.vy = -Math.abs(m.vy); }
+    }
+  }
+}
+
+// Сурет салу
+function draw(){
+  g.clearRect(0,0,W,H);
+  g.fillStyle = '#FFFDF7'; g.fillRect(0,0,W,SURFACE);       // газ (ауа)
+  g.fillStyle = '#E0F2FE'; g.fillRect(0,SURFACE,W,H-SURFACE); // су
+  g.strokeStyle = '#38BDF8'; g.lineWidth = 3;
+  g.beginPath(); g.moveTo(0,SURFACE); g.lineTo(W,SURFACE); g.stroke();
+  g.font = '900 18px Arial'; g.fillStyle = '#9A3412';
+  g.fillText('Газ (бу)',12,26); g.fillStyle = '#0369A1'; g.fillText('Сұйық (су)',12,SURFACE+26);
+  const dot = (m,color)=>{
+    g.beginPath(); g.arc(m.x,m.y,6,0,Math.PI*2); g.fillStyle=color; g.fill();
+    if(m.ring>0){ g.strokeStyle='#EF4444'; g.lineWidth=3; g.beginPath(); g.arc(m.x,m.y,11,0,Math.PI*2); g.stroke(); }
+  };
+  liquid.forEach(m=>dot(m,'#0EA5E9'));
+  gas.forEach(m=>dot(m,'#F97316'));
+}
+
+function showStats(){
+  document.getElementById('nL').textContent = liquid.length;
+  document.getElementById('nG').textContent = gas.length;
+  document.getElementById('nE').textContent = escaped;
+  document.getElementById('nC').textContent = returned;
+}
+function loop(){ update(); draw(); if(tick%6===0) showStats(); requestAnimationFrame(loop); }
+
+// ----- Батырмалар және түсіндірмелер -----
+const texts = {
+  idle: 'Сұйықтағы молекулалар бір-біріне жақын, баяу қозғалады, бірақ ешқашан тоқтамайды. Бу молекулалары алшақ және жылдам қозғалады.',
+  evap: '☀️ БУЛАНУ: сұйықтың бетіндегі кейбір молекулалар жылдамдап, басқа молекулалардың тартылыс күшін жеңіп, ауаға ұшып шығады (қызыл шеңбермен белгіленген). Сұйық салқындайды: ең жылдам молекулалар кетеді.',
+  cond: '☁️ КОНДЕНСАЦИЯ: газ тәріздес бу молекулалары баяулап, сұйық бетіне тиеді де, сұйыққа қайта оралады. Бұл кезде жылу бөлінеді. Бұлт, шық, тұман осылай пайда болады.'
+};
+function setMode(m){
+  mode = m;
+  document.getElementById('info').textContent = texts[m];
+  for(const [id,k] of [['bEvap','evap'],['bCond','cond'],['bStop','idle']])
+    document.getElementById(id).classList.toggle('active', m===k);
+}
+document.getElementById('bEvap').onclick = ()=>setMode('evap');
+document.getElementById('bCond').onclick = ()=>setMode('cond');
+document.getElementById('bStop').onclick = ()=>{ setMode('idle'); };
+init(); loop();
+
+/* ======================================================
+   2-БӨЛІМ. САЛЫСТЫРУ КЕСТЕСІ
+   Әр жолда 3 жауап: [Булануға дұрыс, Конденсацияға дұрыс, артық жауап]
+   ====================================================== */
+const rows = [
+  ['Бағыты', ['Сұйық → газ','Газ → сұйық','Қатты → сұйық']],
+  ['Молекулалар', ['Жылдамдап, сұйықтан ұшып шығады','Баяулап, сұйыққа қайта оралады','Орнында қозғалмай тұрады']],
+  ['Жылу', ['Жылу жұтылады, сұйық салқындайды','Жылу бөлінеді','Жылу өзгермейді']],
+  ['Табиғаттағы мысал', ['Теңіз, өзен бетінен су буланады','Бұлт, шық, тұман түзіледі','Мұз еріп кетеді']]
+];
+// rows[i][1][0] — булануға, [1] — конденсацияға дұрыс жауап. Көрсету үшін аралас реттейміз.
+const tbl = document.getElementById('tbl');
+const selects = [];
+rows.forEach((r,i)=>{
+  const tr = document.createElement('tr');
+  tr.innerHTML = '<th>'+r[0]+'</th>';
+  for(let col=0; col<2; col++){
+    const td = document.createElement('td'), s = document.createElement('select');
+    s.innerHTML = '<option value="-1">— таңда —</option>' + [2,0,1].map(k=>'<option value="'+k+'">'+r[1][k]+'</option>').join('');
+    s.dataset.right = col;          // 0 — булану бағаны, 1 — конденсация бағаны
+    s.onchange = ()=>{ s.className=''; };
+    td.appendChild(s); tr.appendChild(td); selects.push(s);
+  }
+  tbl.appendChild(tr);
+});
+document.getElementById('bCheck').onclick = ()=>{
+  let ok = 0;
+  selects.forEach(s=>{
+    const good = (s.value === s.dataset.right);
+    s.className = good ? 'ok' : 'bad';
+    if(good) ok++;
+  });
+  document.getElementById('tblFb').textContent = ok===8
+    ? '🎉 Тамаша! Кесте толық дұрыс.'
+    : 'Дұрыс: '+ok+' / 8. Қызыл ұяларды симуляцияға қайта қарап, түзетіп көр.';
+};
+
+/* ======================================================
+   3-БӨЛІМ. ТЕСТ (3 сұрақ, кері байланыспен)
+   ====================================================== */
+const quiz = [
+  {q:'1. Булану кезінде сұйық бетіндегі молекулалар не істейді?',
+   a:['Баяулап, бір-біріне жабысады','Жылдамдап, сұйықтан ұшып шығады','Қозғалмай тұрады'], right:1,
+   why:'Жылдам молекулалар тартылыс күшін жеңіп, сұйықтан ұшып шығады.'},
+  {q:'2. Конденсация деген не?',
+   a:['Сұйықтың газға айналуы','Қатты заттың еруі','Газ тәріздес будың сұйыққа айналуы'], right:2,
+   why:'Конденсация — буланудың кері үдерісі: бу сұйыққа айналады.'},
+  {q:'3. Табиғатта бұлт қалай пайда болады?',
+   a:['Су буы көтеріліп, салқындап, конденсацияланады','Теңіз суы сұйық күйінде аспанға көтеріледі','Бұлтты жел жасайды'], right:0,
+   why:'Булану арқылы көтерілген су буы салқындап, ұсақ тамшыларға айналады.'}
+];
+let answered = 0, correct = 0;
+const qbox = document.getElementById('quiz');
+quiz.forEach(item=>{
+  const d = document.createElement('div'); d.className = 'q';
+  d.innerHTML = '<div>'+item.q+'</div>';
+  const fb = document.createElement('div'); fb.className = 'fb';
+  const btns = item.a.map((t,k)=>{
+    const b = document.createElement('button'); b.textContent = t;
+    b.onclick = ()=>{
+      if(d.dataset.done) return; d.dataset.done = 1; answered++;
+      if(k===item.right){ b.classList.add('ok'); correct++; fb.textContent = '✅ Дұрыс! '+item.why; }
+      else { b.classList.add('bad'); btns[item.right].classList.add('ok'); fb.textContent = '❌ Қате. '+item.why; }
+      if(answered===quiz.length) document.getElementById('score').textContent =
+        'Нәтиже: '+correct+' / '+quiz.length+(correct===3?' — тамаша!':correct===2?' — жақсы!':' — симуляцияны қайталап көр.');
+    };
+    d.appendChild(b); return b;
+  });
+  d.appendChild(fb); qbox.appendChild(d);
+});
+
+/* ======================================================
+   4-БӨЛІМ. ТУҒАН ЖЕР ЖӘНЕ СУДЫ ҮНЕМДЕУ
+   ====================================================== */
+const pledges = ['Тіс тазалағанда кранды жауып қоямын','Өзен-көл жағасына қоқыс тастамаймын','Ағып тұрған кранды бірден айтамын','Суды ұқыпты пайдаланып, достарыма да үйретемін'];
+const pb = document.getElementById('pledge');
+pledges.forEach(t=>{
+  const b = document.createElement('button'); b.className='green'; b.style.margin='4px 6px 4px 0'; b.textContent = t;
+  b.onclick = ()=>{ document.getElementById('pledgeFb').textContent = '🌍 Керемет! «'+t+'» — бұл туған жерге деген сүйіспеншіліктің нақты көрінісі.'; };
+  pb.appendChild(b);
+});
+</script>
+</body>
+</html>

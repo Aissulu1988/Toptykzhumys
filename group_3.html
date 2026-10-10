@@ -1,0 +1,467 @@
+<!DOCTYPE html>
+<html lang="kk">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Қаныққан және қанықпаған су буы</title>
+<style>
+  :root{color-scheme:light}
+  *{box-sizing:border-box}
+  body{margin:0;padding:14px;background:#FFF8EC;color:#2B2B2B;font:700 18px/1.45 "Trebuchet MS",Arial,sans-serif}
+  .wrap{max-width:960px;margin:0 auto}
+  h1{font-size:28px;font-weight:900;color:#C2410C;margin:4px 0 6px}
+  h2{font-size:22px;font-weight:900;color:#B45309;margin:0 0 10px}
+  .card{background:#fff;border:3px solid #FDBA74;border-radius:18px;padding:14px;margin-bottom:16px;box-shadow:0 4px 0 #FED7AA}
+  .row{display:flex;flex-wrap:wrap;gap:10px;align-items:center;margin:10px 0}
+  button{font-family:inherit;font-size:18px;font-weight:900;border:0;border-radius:14px;padding:12px 18px;color:#fff;background:#F97316;box-shadow:0 4px 0 #C2410C;cursor:pointer}
+  button:active{transform:translateY(2px)}
+  button.green{background:#10B981;box-shadow:0 4px 0 #047857}
+  button.grey{background:#9CA3AF;box-shadow:0 4px 0 #6B7280}
+  button.pick{background:#fff;color:#2B2B2B;border:3px solid #FDBA74;box-shadow:none}
+  button.pick.active{background:#FED7AA;border-color:#EA580C}
+  button.opt{background:#fff;color:#2B2B2B;border:3px solid #FDBA74;box-shadow:none;padding:8px 14px;font-size:16px}
+  button.opt.ok{background:#BBF7D0;border-color:#10B981}
+  button.opt.bad{background:#FECACA;border-color:#EF4444}
+  button.opt.sel{background:#FED7AA;border-color:#EA580C}
+  canvas{width:100%;height:auto;display:block;background:#FFFDF7;border:3px solid #FDBA74;border-radius:14px}
+  .tempbox{flex:1;min-width:260px}
+  .tempbox input{width:100%;accent-color:#F97316;height:30px}
+  .tempbox output{font-size:26px;color:#C2410C}
+  .legend span{display:inline-block;margin-right:14px;font-size:16px}
+  .dot{display:inline-block;width:14px;height:14px;border-radius:50%;vertical-align:middle;margin-right:4px}
+  .state{font-size:24px;font-weight:900;border-radius:14px;padding:10px 14px;margin:10px 0}
+  .st-unsat{background:#FEF3C7;color:#92400E}
+  .st-sat{background:#D1FAE5;color:#047857}
+  .st-over{background:#EDE9FE;color:#5B21B6}
+  .metrics{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:10px}
+  .metrics div{background:#FFEDD5;border-radius:12px;padding:8px 12px;font-size:16px}
+  .metrics b{display:block;font-size:24px;color:#C2410C}
+  .gauge{position:relative;height:22px;background:#FDE68A;border-radius:12px;margin:14px 0 6px;overflow:hidden}
+  .gfill{height:100%;background:#F97316;border-radius:12px;transition:width .2s}
+  .gmark{position:absolute;top:0;bottom:0;width:4px;background:#047857}
+  .gl{font-size:15px;color:#6B7280}
+  .txt{background:#FEF3C7;border-radius:12px;padding:10px 14px;margin-top:10px}
+  .tmsg{background:#EDE9FE;border-radius:12px;padding:10px 14px;margin-top:10px;display:none;color:#4C1D95}
+  .sci{background:#ECFDF5;border-left:8px solid #10B981;border-radius:12px;padding:10px 14px;font-size:17px;margin-top:10px}
+  ol.tasks{padding-left:22px}
+  ol.tasks li{margin:10px 0}
+  ol.tasks small{display:block;color:#6B7280;font-weight:700;font-size:15px}
+  textarea{width:100%;min-height:80px;font:700 16px "Trebuchet MS",Arial,sans-serif;padding:8px;border:3px solid #FDBA74;border-radius:12px}
+  .t{margin:12px 0 18px;padding-bottom:12px;border-bottom:3px dashed #FED7AA}
+  .srow{margin:10px 0;padding:8px;background:#FFF7ED;border-radius:12px}
+  .fb{font-weight:900;margin:6px 0}
+  .two{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+  .two canvas{height:auto}
+  select{font-family:inherit;font-size:17px;font-weight:700;padding:8px;border-radius:10px;border:3px solid #FDBA74;background:#fff}
+  select.ok{background:#BBF7D0;border-color:#10B981}
+  select.bad{background:#FECACA;border-color:#EF4444}
+  .quote{background:#ECFDF5;border-left:8px solid #10B981;border-radius:12px;padding:12px 16px;font-size:20px}
+  @media(max-width:600px){body{font-size:16px}.two{grid-template-columns:1fr}}
+</style>
+</head>
+<body>
+<div class="wrap">
+<h1>💧 Қаныққан және қанықпаған су буы</h1>
+<p style="margin:0 0 14px">Әр нүкте — бір су молекуласы. Режимді таңда, температураны өзгерт және молекулалардың қозғалысын бақыла.</p>
+
+<!-- ============ 1. СИМУЛЯЦИЯ ============ -->
+<div class="card">
+  <h2>1. Су мен оның буы ыдыста</h2>
+  <div class="row">
+    <button class="pick active" id="bSat">🟢 Қаныққан бу</button>
+    <button class="pick" id="bUnsat">🟠 Қанықпаған бу</button>
+    <button class="grey" id="bLid">Ыдыс: ЖАБЫҚ</button>
+  </div>
+  <div class="row">
+    <div class="tempbox">
+      🌡️ Температура: <output id="tOut">20</output> °C
+      <input type="range" id="tIn" min="10" max="45" step="1" value="20">
+    </div>
+    <button id="bPause" class="grey">⏸ Тоқтату</button>
+    <button id="bReset" class="green">↺ Қайта бастау</button>
+  </div>
+
+  <canvas id="cv" width="640" height="400"></canvas>
+  <p class="legend" style="margin:8px 0 0">
+    <span><i class="dot" style="background:#0EA5E9"></i>сұйық молекуласы</span>
+    <span><i class="dot" style="background:#F97316"></i>бу молекуласы</span>
+    <span><i class="dot" style="background:#fff;border:3px solid #EF4444"></i>буланды ↑</span>
+    <span><i class="dot" style="background:#fff;border:3px solid #10B981"></i>конденсацияланды ↓</span>
+  </p>
+
+  <h2 style="margin-top:14px">Бу күйі туралы ақпарат</h2>
+  <div class="state st-sat" id="stateBox">…</div>
+  <div class="metrics">
+    <div>Буланды (соңғы 10 с)<b id="mE">0</b></div>
+    <div>Конденсацияланды (соңғы 10 с)<b id="mC">0</b></div>
+    <div>Бу молекулалары<b id="mN">0</b></div>
+    <div>Қаныққан бу үшін (тепе-теңдікте)<b id="mNs">0</b></div>
+    <div>Қаныққан бу қысымы p<sub>қ</sub><b id="mPs">0</b></div>
+    <div>Қазіргі бу қысымы p<b id="mP">0</b></div>
+    <div>Салыстырмалы ылғалдылық p/p<sub>қ</sub><b id="mPhi">0</b></div>
+    <div id="mEscBox">Ауаға кеткен молекулалар<b id="mEsc">0</b></div>
+  </div>
+  <div class="gauge"><div class="gfill" id="gfill" style="width:0"></div><div class="gmark" id="gmark"></div></div>
+  <div class="gl">Қызғылт сары жолақ — қазіргі бу молекулалары, жасыл сызық — қаныққан бу үшін қажетті мөлшер.</div>
+  <div class="txt" id="stateText"></div>
+  <div class="tmsg" id="tmsg"></div>
+  <div class="sci"><b>Ғылыми ескерту:</b> берілген температурада өз сұйығымен <b>динамикалық тепе-теңдікте</b> тұрған бу — қаныққан бу: бірлік уақытта буланатын және сұйыққа қайтатын молекулалар саны тең болады. Молекулалар тоқтап қалмайды, екі үдеріс те жүре береді. Қанықпаған буда мұндай тепе-теңдік орнамаған. Қаныққан будың қысымы температураға тәуелді (температура артқанда артады). Симуляцияда молекулалар саны шартты, ал қысымның мәндері шамамен берілген.</div>
+</div>
+
+<!-- ============ 2. ЗЕРТТЕУ ТАПСЫРМАЛАРЫ ============ -->
+<div class="card">
+  <h2>2. Зерттеу тапсырмалары</h2>
+  <ol class="tasks">
+    <li><label><input type="checkbox"> Жабық ыдыстағы су мен оның үстіндегі бу молекулаларының қозғалысын бақыла.</label>
+      <small>Кеңес: «Қаныққан бу» режимінде молекулалардың қозғалысын бақыла. Қайсысы жылдамырақ қозғалады: сұйық па, бу ма?</small></li>
+    <li><label><input type="checkbox"> Булану және конденсация үдерістері қатар жүретінін анықта.</label>
+      <small>Кеңес: қызыл және жасыл шеңберлерді қара. Буланған және конденсацияланған молекулалар санын панельден салыстыр.</small></li>
+    <li><label><input type="checkbox"> Қаныққан бу мен қанықпаған будың айырмашылығын зертте.</label>
+      <small>Кеңес: екі режимді салыстыр. Панельдегі «Буланды» және «Конденсацияланды» сандарына, бу күйіне назар аудар.</small></li>
+    <li><label><input type="checkbox"> Температура өзгергенде қаныққан будың күйі қалай өзгеретінін қарастыр.</label>
+      <small>Кеңес: «Қаныққан бу» режимінде температураны көтеріп, содан кейін түсіріп көр. Бу молекулаларының саны мен қысымы не болады?</small></li>
+    <li><label><input type="checkbox"> Неліктен ашық ауадағы су буы әрдайым қаныққан күйде болмайтынын түсіндір.</label>
+      <small>Кеңес: «Қанықпаған бу» режимінде ыдысты ашық қалдыр, сосын қақпақты жапқанда не өзгеретінін бақыла.</small></li>
+  </ol>
+  <textarea placeholder="Өз қорытындыңды осында жаз: қаныққан бу — ..., қанықпаған бу — ..., ашық ауада бу қаныққан болмайды, себебі ..."></textarea>
+</div>
+
+<!-- ============ 3. ТАПСЫРМАЛАР ============ -->
+<div class="card">
+  <h2>3. Қаныққан және қанықпаған буды ажырат (3 тапсырма)</h2>
+
+  <div class="t">
+    <b>1-тапсырма.</b> Әр жағдайда бу қандай екенін таңда.
+    <div id="a1"></div>
+  </div>
+
+  <div class="t">
+    <b>2-тапсырма.</b> Екі ыдыс бірдей температурада тұр. Стрелкалар — бір секундтағы буланған (↑) және қайтқан (↓) молекулалар. Қай ыдыстағы бу қаныққан?
+    <div class="two">
+      <div><canvas id="dA" width="320" height="260"></canvas><button class="opt" id="bA" style="width:100%;margin-top:6px">A ыдысындағы бу қаныққан</button></div>
+      <div><canvas id="dB" width="320" height="260"></canvas><button class="opt" id="bB" style="width:100%;margin-top:6px">B ыдысындағы бу қаныққан</button></div>
+    </div>
+    <div class="fb" id="a2fb"></div>
+  </div>
+
+  <div class="t">
+    <b>3-тапсырма.</b> 20 °C температурада қаныққан су буының қысымы шамамен <b>2,3 кПа</b>. Ыдыстағы бу қысымына қарап, бу түрін таңда.
+    <div id="a3"></div>
+    <div class="row"><button id="a3btn">✔ Тексеру</button></div>
+    <div class="fb" id="a3fb"></div>
+  </div>
+
+  <div class="fb" id="score" style="font-size:22px"></div>
+</div>
+
+<!-- ============ 4. ҚҰНДЫЛЫҚ ============ -->
+<div class="card">
+  <h2>4. Су буы және туған жер</h2>
+  <p><b>Су буының маңызы:</b> Күн қыздырғанда өзен, көл, теңіз бетінен су буланады. Ауадағы су буы көтеріліп, салқындағанда қаныққан күйге жетеді де конденсацияланады: бұлт, тұман, шық түзіледі. Жаңбыр мен қар болып жауған су өзендерді, көлдерді, топырақты қайта толтырады. Бұл — су айналымы. Су буы болмаса, жер бетінде тіршілік те болмас еді.</p>
+  <p class="quote">«Туған жердей жер болмас, туған елдей ел болмас.»<br><small>Қазақ мақалы</small></p>
+  <p>Қазақстанның Ертіс, Есіл, Жайық, Іле, Сырдария сияқты өзендері, Балқаш көлі, тау мұздықтары — біздің ортақ байлығымыз. Бірнеше өзеніміз шетелден басталады, сондықтан суды ұқыпты пайдалану өте маңызды. Арал теңізінің тартылуы су көздеріне немқұрайды қарауға болмайтынын көрсетеді: оған құятын өзендердің суы көп алынды, ал булану жалғасты.</p>
+  <p>Өзіңе бір міндет таңда:</p>
+  <div id="pledge"></div>
+  <div class="fb" id="pledgeFb"></div>
+</div>
+</div>
+
+<script>
+/* ======================================================
+   БӨЛІМ A. МОЛЕКУЛАЛЫҚ МОДЕЛЬ (есептеу бөлігі)
+   Негізгі идея:
+   • Булану жылдамдығы тек температураға тәуелді (λE).
+   • Конденсация жылдамдығы бу молекулаларының санына пропорционал (C·n).
+   • Екеуі теңескенде n = n_sat(T): бу қаныққан, динамикалық тепе-теңдік.
+   ====================================================== */
+const W=640,H=400,SURF=235,TOP=22,C_RATE=0.25,LCOUNT=110;
+const psat=T=>6.112*Math.exp(17.62*T/(243.12+T));               // қаныққан бу қысымы, гПа
+const nsat=T=>30*(psat(T)/psat(20))*(293.15/(T+273.15));       // тепе-теңдіктегі бу молекулаларының шартты саны
+const vSp=T=>2.0*Math.sqrt((T+273.15)/293.15);                 // молекула жылдамдығы (температурамен өседі)
+const rnd=(a,b)=>a+Math.random()*(b-a);
+const sim={T:20,mode:'sat',lidOpen:false,liquid:[],vapor:[],time:0,evt:[],accE:0,accC:0,thrE:1,thrC:1,nvS:0,state:'sat',escaped:0};
+
+function newLiquid(x,y){return {x:x??rnd(12,W-12),y:y??rnd(SURF+10,H-12),vx:rnd(-.5,.5),vy:rnd(-.5,.5),ring:0,rc:''};}
+function newVapor(){const a=rnd(0,Math.PI*2),s=vSp(sim.T);return {x:rnd(15,W-15),y:rnd(TOP+10,SURF-14),vx:Math.cos(a)*s,vy:Math.sin(a)*s,ring:0,rc:'',down:false};}
+function resetSim(mode){
+  sim.mode=mode;sim.liquid=[];sim.vapor=[];sim.evt=[];sim.time=0;sim.accE=0;sim.accC=0;sim.escaped=0;
+  for(let i=0;i<LCOUNT;i++)sim.liquid.push(newLiquid());
+  const n0=Math.round(mode==='sat'?nsat(sim.T):0.2*nsat(sim.T));
+  for(let i=0;i<n0;i++)sim.vapor.push(newVapor());
+  sim.lidOpen=(mode==='unsat');
+  sim.nvS=n0;sim.state=mode==='sat'?'sat':'unsat';
+}
+// Булану: сұйықтың ең жоғарғы молекуласы ұшып шығады
+function evaporate(){
+  let bi=-1,by=1e9;
+  sim.liquid.forEach((m,i)=>{if(m.y<by){by=m.y;bi=i;}});
+  if(bi<0)return;
+  const m=sim.liquid.splice(bi,1)[0],s=vSp(sim.T);
+  sim.vapor.push({x:m.x,y:SURF-6,vx:rnd(-.6,.6)*s,vy:-rnd(.8,1.2)*s,ring:70,rc:'#EF4444',down:false});
+  sim.liquid.push(newLiquid());                    // су көп: сұйық қоры өзгермейді
+  sim.evt.push({t:sim.time,k:'e'});
+}
+// Конденсация: кездейсоқ бір бу молекуласы сұйыққа қарай бағытталады
+function condenseOne(){
+  const free=sim.vapor.filter(m=>!m.down);
+  if(!free.length)return;
+  const m=free[Math.floor(Math.random()*free.length)];
+  m.down=true;m.vx*=0.2;m.vy=3.2;m.ring=9999;m.rc='#10B981';
+}
+function stepSim(dt){
+  const s=sim,k=dt*60,sp=vSp(s.T),ns=nsat(s.T);
+  s.time+=dt;
+  // булану жылдамдығы: тек температураға тәуелді
+  s.accE+=C_RATE*ns*dt;
+  while(s.accE>=s.thrE){s.accE-=s.thrE;s.thrE=rnd(.4,1.6);evaporate();}
+  // конденсация жылдамдығы: бу молекулаларының санына пропорционал
+  s.accC+=C_RATE*s.vapor.length*dt;
+  while(s.accC>=s.thrC){s.accC-=s.thrC;s.thrC=rnd(.4,1.6);condenseOne();}
+  // бу молекулаларының қозғалысы
+  for(let i=s.vapor.length-1;i>=0;i--){
+    const m=s.vapor[i];
+    if(m.down){
+      m.x+=m.vx*k;m.y+=m.vy*k;
+      if(m.y>=SURF-1){
+        s.vapor.splice(i,1);
+        const l=newLiquid(m.x,SURF+8);l.ring=50;l.rc='#10B981';s.liquid.push(l);
+        const deep=[];s.liquid.forEach((q,j)=>{if(q.y>SURF+40)deep.push(j);});
+        if(deep.length)s.liquid.splice(deep[Math.floor(Math.random()*deep.length)],1);
+        s.evt.push({t:s.time,k:'c'});
+      }
+      continue;
+    }
+    if(Math.random()<0.02*k){const a=Math.atan2(m.vy,m.vx)+rnd(-.6,.6);m.vx=Math.cos(a)*sp;m.vy=Math.sin(a)*sp;}
+    const mag=Math.hypot(m.vx,m.vy)||1;m.vx*=1+(sp/mag-1)*0.1;m.vy*=1+(sp/mag-1)*0.1;
+    m.x+=m.vx*k;m.y+=m.vy*k;
+    if(m.x<8){m.x=8;m.vx=Math.abs(m.vx);} if(m.x>W-8){m.x=W-8;m.vx=-Math.abs(m.vx);}
+    if(m.y>SURF-3){m.y=SURF-3;m.vy=-Math.abs(m.vy);}
+    if(m.y<TOP){
+      if(s.lidOpen){s.vapor.splice(i,1);s.escaped++;continue;}  // ашық ыдыс: бу ауаға кетеді
+      m.y=TOP;m.vy=Math.abs(m.vy);
+    }
+    if(m.ring>0)m.ring-=k;
+  }
+  // сұйық молекулалары: баяу, бірақ тоқтамайды
+  const lmax=0.45*sp;
+  for(const m of s.liquid){
+    m.vx+=rnd(-.15,.15)*k;m.vy+=rnd(-.15,.15)*k;
+    const v=Math.hypot(m.vx,m.vy);if(v>lmax){m.vx*=lmax/v;m.vy*=lmax/v;}
+    m.x+=m.vx*k;m.y+=m.vy*k;
+    if(m.x<10||m.x>W-10)m.vx*=-1;
+    if(m.y>H-10)m.vy=-Math.abs(m.vy);
+    if(m.y<SURF+7){m.y=SURF+7;m.vy=Math.abs(m.vy);}
+    if(m.ring>0)m.ring-=k;
+  }
+  // бу күйін анықтау (тегістелген мән, кері байланыспен)
+  s.nvS+=(s.vapor.length-s.nvS)*Math.min(1,dt/1.5);
+  const phi=s.nvS/ns;
+  if(s.state==='sat'){if(phi<0.8)s.state='unsat';else if(phi>1.2)s.state='over';}
+  else{if(phi>0.9&&phi<1.1)s.state='sat';else s.state=phi<1?'unsat':'over';}
+}
+function counts(){
+  while(sim.evt.length&&sim.evt[0].t<sim.time-10)sim.evt.shift();
+  let e=0,c=0;sim.evt.forEach(x=>{if(x.k==='e')e++;else c++;});
+  return {e,c};
+}
+/*UI*/
+/* ======================================================
+   БӨЛІМ B. СУРЕТ САЛУ ЖӘНЕ БАТЫРМАЛАР
+   ====================================================== */
+const $=id=>document.getElementById(id);
+const fmt=(x,d=1)=>x.toFixed(d).replace('.',',');
+const cv=$('cv'),g=cv.getContext('2d');
+let paused=false,lastTs=0,lastPanel=0,tmsgTimer=null;
+
+function draw(){
+  g.clearRect(0,0,W,H);
+  g.fillStyle='#FFFDF7';g.fillRect(0,0,W,SURF);
+  g.fillStyle='#E6F6FF';g.fillRect(0,SURF,W,H-SURF);
+  g.strokeStyle='#38BDF8';g.lineWidth=3;g.beginPath();g.moveTo(0,SURF);g.lineTo(W,SURF);g.stroke();
+  g.strokeStyle='#F59E0B';g.lineWidth=6;g.strokeRect(3,0,W-6,H-3);
+  g.font='900 18px Arial';g.fillStyle='#9A3412';g.fillText('Бу',14,48);
+  g.fillStyle='#0369A1';g.fillText('Су',14,SURF+28);
+  if(!sim.lidOpen){
+    g.fillStyle='#F97316';g.fillRect(0,0,W,TOP-4);
+    g.fillStyle='#fff';g.font='900 13px Arial';g.textAlign='center';g.fillText('ҚАҚПАҚ (ыдыс жабық)',W/2,TOP-9);g.textAlign='left';
+  }else{
+    g.fillStyle='#10B981';g.font='900 14px Arial';g.textAlign='center';
+    g.fillText('⇡ ыдыс ашық: бу молекулалары ауаға кете алады ⇡',W/2,15);g.textAlign='left';
+  }
+  const dot=(m,c,r)=>{
+    g.beginPath();g.arc(m.x,m.y,r,0,Math.PI*2);g.fillStyle=c;g.fill();
+    if(m.ring>0){g.strokeStyle=m.rc;g.lineWidth=3;g.beginPath();g.arc(m.x,m.y,r+5,0,Math.PI*2);g.stroke();}
+  };
+  sim.liquid.forEach(m=>dot(m,'#0EA5E9',6));
+  sim.vapor.forEach(m=>dot(m,'#F97316',5.5));
+}
+
+const STATE={
+  unsat:{cls:'st-unsat',name:'Қанықпаған бу'},
+  sat:{cls:'st-sat',name:'Қаныққан бу (динамикалық тепе-теңдік)'},
+  over:{cls:'st-over',name:'Қаныққан күйден артық бу (конденсация басым)'}
+};
+function panel(){
+  const ns=nsat(sim.T),nv=sim.vapor.length,c=counts(),st=sim.state;
+  const w=Math.max(0.1,Math.min(10,sim.time));
+  const phi=sim.nvS/ns,pS=psat(sim.T)/10,p=pS*phi;
+  $('stateBox').className='state '+STATE[st].cls;
+  $('stateBox').textContent=STATE[st].name;
+  $('mE').textContent=c.e;$('mC').textContent=c.c;
+  $('mN').textContent=nv;$('mNs').textContent=Math.round(ns);
+  $('mPs').textContent=fmt(pS,2)+' кПа';$('mP').textContent=fmt(p,2)+' кПа';
+  $('mPhi').textContent=Math.round(phi*100)+' %';
+  $('mEsc').textContent=sim.escaped;
+  $('mEscBox').style.display=(sim.lidOpen||sim.escaped>0)?'block':'none';
+  const mx=1.6*ns;
+  $('gfill').style.width=Math.min(100,nv/mx*100)+'%';
+  $('gmark').style.left=(ns/mx*100)+'%';
+  let txt;
+  if(st==='sat') txt='Булану және конденсация жылдамдықтары тең: бірдей уақытта қанша молекула сұйықтан ұшып шықса, сонша молекула сұйыққа қайтады. Бу молекулаларының саны өзгермейді, бірақ молекулалар тоқтамайды.';
+  else if(st==='unsat') txt=sim.lidOpen
+    ?'Булану конденсациядан басым: сұйықтан ұшып шығатын молекулалар қайтатындардан көп. Ыдыс ашық болғандықтан, бу молекулалары ауаға кетіп отырады, сондықтан динамикалық тепе-теңдік орнамайды және бу қанықпаған күйде қалады.'
+    :'Булану конденсациядан басым: бу молекулалары көбейіп жатыр. Ыдыс жабық, сондықтан біраздан кейін конденсация жылдамдығы буланумен теңеседі де, бу қаныққан күйге жетеді.';
+  else txt='Бу молекулалары қаныққан бу үшін қажетті мөлшерден көп (мысалы, температура төмендеді). Конденсация басым: артық бу сұйыққа айналады, соңында бу қаныққан күйге оралады.';
+  $('stateText').textContent=txt;
+}
+function loop(ts){
+  const dt=Math.min(0.05,(ts-lastTs)/1000||0);lastTs=ts;
+  if(!paused)stepSim(dt);
+  draw();
+  if(ts-lastPanel>150){panel();lastPanel=ts;}
+  requestAnimationFrame(loop);
+}
+
+// Режимдер, қақпақ, температура
+function setMode(m){
+  $('bSat').classList.toggle('active',m==='sat');$('bUnsat').classList.toggle('active',m==='unsat');
+  resetSim(m);paintLid();panel();
+}
+function paintLid(){$('bLid').textContent='Ыдыс: '+(sim.lidOpen?'АШЫҚ':'ЖАБЫҚ');$('bLid').className=sim.lidOpen?'':'grey';}
+$('bSat').onclick=()=>setMode('sat');
+$('bUnsat').onclick=()=>setMode('unsat');
+$('bLid').onclick=()=>{sim.lidOpen=!sim.lidOpen;paintLid();};
+$('bReset').onclick=()=>setMode(sim.mode);
+$('bPause').onclick=()=>{paused=!paused;$('bPause').textContent=paused?'▶ Жалғастыру':'⏸ Тоқтату';};
+$('tIn').oninput=e=>{
+  const nt=+e.target.value,old=sim.T;sim.T=nt;$('tOut').textContent=nt;
+  const box=$('tmsg');
+  box.style.display='block';
+  box.textContent=nt>old
+    ?'Температура көтерілді: булану жылдамдады (қызыл шеңберлер жиіледі). Бу молекулалары көбейіп, жаңа тепе-теңдікке жеткенде қаныққан будың қысымы мен тығыздығы артады.'
+    :'Температура төмендеді: булану баяулады, ал бу молекулалары әлі көп, сондықтан конденсация басым. Артық бу сұйыққа айналады, қаныққан будың қысымы мен тығыздығы азаяды.';
+  clearTimeout(tmsgTimer);tmsgTimer=setTimeout(()=>{box.style.display='none';},9000);
+};
+
+/* ======================================================
+   БӨЛІМ C. 3 ИНТЕРАКТИВТІ ТАПСЫРМА
+   ====================================================== */
+const R={a1:0,a1n:0,a2:null,a3:null};
+function updScore(){
+  if(R.a1n<6||R.a2===null||R.a3===null)return;
+  const s=R.a1+R.a2+R.a3;
+  $('score').textContent='Нәтиже: '+s+' / 10'+(s>=9?' — тамаша, сен ажыратуды жақсы меңгердің!':(s>=6?' — жақсы!':' — симуляцияны қайталап көр.'));
+}
+// 1-тапсырма: жағдайларды сыныптау
+const S1=[
+ ['Жабық ыдыста су мен оның буы ұзақ уақыт тұр, температура өзгермейді.','sat','Ұзақ уақыттан кейін жабық ыдыста динамикалық тепе-теңдік орнайды: бу қаныққан.'],
+ ['Ашық табақтағы су үстінен бу ауаға тарап кетіп жатыр.','unsat','Ашық ауада молекулалар кетіп қалады, тепе-теңдік орнамайды: бу қанықпаған.'],
+ ['Бір секундта сұйықтан ұшып шығатын молекулалар сұйыққа қайтатын молекулалардан көп.','unsat','Булану басым болса, бу әлі қанықпаған.'],
+ ['Бір секундта буланатын және сұйыққа қайтатын молекулалар саны тең.','sat','Жылдамдықтар тең болса, бу қаныққан.'],
+ ['Құрғақ ыдыс қақпақпен жаңа жабылды, бу молекулалары әлі аз.','unsat','Басында булану басым, бу біртіндеп көбейеді. Әзірге бу қанықпаған.'],
+ ['Өз сұйығымен динамикалық тепе-теңдікте тұрған бу.','sat','Бұл — қаныққан будың анықтамасы.']
+];
+const a1=$('a1');
+S1.forEach(it=>{
+  const d=document.createElement('div');d.className='srow';
+  d.innerHTML='<div>'+it[0]+'</div>';
+  const b1=document.createElement('button'),b2=document.createElement('button'),fb=document.createElement('div');
+  b1.className=b2.className='opt';b1.textContent='Қаныққан';b2.textContent='Қанықпаған';fb.className='fb';
+  [[b1,'sat'],[b2,'unsat']].forEach(([b,v])=>{
+    b.style.marginRight='8px';
+    b.onclick=()=>{
+      if(d.dataset.done)return;d.dataset.done=1;R.a1n++;
+      if(v===it[1]){b.classList.add('ok');R.a1++;fb.textContent='✅ Дұрыс! '+it[2];}
+      else{b.classList.add('bad');(it[1]==='sat'?b1:b2).classList.add('ok');fb.textContent='❌ Қате. '+it[2];}
+      updScore();
+    };
+    d.appendChild(b);
+  });
+  d.appendChild(fb);a1.appendChild(d);
+});
+// 2-тапсырма: сызбадан қаныққан будың ыдысын табу
+function seeded(seed){let s=seed;return()=>{s=(s*9301+49297)%233280;return s/233280;};}
+function vessel(id,nVap,up,down,seed,name){
+  const c=$(id),x=c.getContext('2d'),w=c.width,h=c.height,sf=150,r=seeded(seed);
+  x.fillStyle='#FFFDF7';x.fillRect(0,0,w,h);
+  x.fillStyle='#E6F6FF';x.fillRect(0,sf,w,h-sf);
+  x.strokeStyle='#38BDF8';x.lineWidth=3;x.beginPath();x.moveTo(0,sf);x.lineTo(w,sf);x.stroke();
+  x.strokeStyle='#F59E0B';x.lineWidth=5;x.strokeRect(2,2,w-4,h-4);
+  x.fillStyle='#0EA5E9';
+  for(let i=0;i<34;i++){x.beginPath();x.arc(14+r()*(w-28),sf+14+r()*(h-sf-28),5,0,7);x.fill();}
+  x.fillStyle='#F97316';
+  for(let i=0;i<nVap;i++){x.beginPath();x.arc(14+r()*(w-28),24+r()*(sf-44),5,0,7);x.fill();}
+  const arrows=(n,dir,col,x0)=>{
+    x.strokeStyle=col;x.fillStyle=col;x.lineWidth=3;
+    for(let i=0;i<n;i++){
+      const ax=x0+i*16,y1=sf-6,y2=sf-46;
+      x.beginPath();x.moveTo(ax,dir<0?y1:y2);x.lineTo(ax,dir<0?y2:y1);x.stroke();
+      const ty=dir<0?y2:y1,sg=dir<0?1:-1;
+      x.beginPath();x.moveTo(ax,ty);x.lineTo(ax-5,ty+sg*9);x.lineTo(ax+5,ty+sg*9);x.closePath();x.fill();
+    }
+  };
+  arrows(up,-1,'#EF4444',w/2-96);arrows(down,1,'#10B981',w/2+14);
+  x.font='900 17px Arial';x.fillStyle='#EF4444';x.fillText('↑ '+up,w/2-96,sf-54);
+  x.fillStyle='#10B981';x.fillText('↓ '+down,w/2+14,sf-54);
+  x.fillStyle='#92400E';x.fillText(name,12,26);
+}
+vessel('dA',4,6,2,11,'A ыдысы');
+vessel('dB',11,5,5,23,'B ыдысы');
+let a2done=false;
+function a2(choice){
+  if(a2done)return;a2done=true;
+  const ok=choice==='B';R.a2=ok?1:0;
+  $('bB').classList.add('ok');if(!ok)$('bA').classList.add('bad');
+  $('a2fb').textContent=ok
+    ?'✅ Дұрыс! B ыдысында буланған және қайтқан молекулалар саны тең (5 және 5): динамикалық тепе-теңдік, бу қаныққан. Мұнда бу молекулалары да көп.'
+    :'❌ Қате. A ыдысында буланған молекулалар көп (6), ал қайтқандар аз (2): бу қанықпаған. Қаныққан бу B ыдысында: онда екі үдеріс тең (5 және 5).';
+  updScore();
+}
+$('bA').onclick=()=>a2('A');$('bB').onclick=()=>a2('B');
+// 3-тапсырма: қысым бойынша
+const S3=[[2.3,'sat'],[1.2,'unsat'],[0.6,'unsat']];
+const a3=$('a3'),sels=[];
+S3.forEach(it=>{
+  const d=document.createElement('div');d.className='srow';
+  d.innerHTML='Бу қысымы <b>'+fmt(it[0],1)+' кПа</b> (20 °C): ';
+  const s=document.createElement('select');
+  s.innerHTML='<option value="">— таңда —</option><option value="sat">Қаныққан бу</option><option value="unsat">Қанықпаған бу</option>';
+  d.appendChild(s);a3.appendChild(d);sels.push(s);
+});
+let a3done=false;
+$('a3btn').onclick=()=>{
+  if(a3done)return;
+  if(sels.some(s=>!s.value)){$('a3fb').textContent='Алдымен үш жолды да толтыр.';return;}
+  a3done=true;$('a3btn').disabled=true;
+  let ok=0;
+  sels.forEach((s,i)=>{const good=s.value===S3[i][1];s.className=good?'ok':'bad';if(good)ok++;});
+  R.a3=ok;
+  $('a3fb').textContent=(ok===3?'🎉 Тамаша! ':'Дұрыс: '+ok+' / 3. ')+'Бу қысымы осы температурадағы қаныққан бу қысымына (2,3 кПа) тең болса, бу қаныққан. Одан кіші болса, бу қанықпаған.';
+  updScore();
+};
+
+/* ======================================================
+   БӨЛІМ D. ТУҒАН ЖЕР: СУ РЕСУРСТАРЫН ҰҚЫПТЫ ПАЙДАЛАНУ
+   ====================================================== */
+['Өзен-көл жағасын таза ұстаймын','Ағып тұрған кранды бірден жөндетемін','Суды қажетінше ғана жұмсаймын','Ағаш егуге қатысамын'].forEach(t=>{
+  const b=document.createElement('button');b.className='green';b.style.margin='4px 6px 4px 0';b.textContent=t;
+  b.onclick=()=>{$('pledgeFb').textContent='🌍 Керемет! «'+t+'»: бұл туған жердің су көздерін қорғаудың нақты қадамы.';};
+  $('pledge').appendChild(b);
+});
+
+// Іске қосу
+resetSim('sat');paintLid();panel();
+requestAnimationFrame(loop);
+</script>
+</body>
+</html>
